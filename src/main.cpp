@@ -35,9 +35,12 @@ int main() {
 	Tools tools;
 	vector<VectorXd> estimations;
 	vector<VectorXd> ground_truth;
+	auto counter { 0 };
+	auto useLIDAR { true };
+	auto useRADAR { false };
 
 	h.onMessage(
-			[&fusionEKF,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+			[&counter, useRADAR, useLIDAR, &fusionEKF,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
 				// "42" at the start of the message means there's a websocket message event.
 				// The 4 signifies a websocket message
 				// The 2 signifies a websocket event
@@ -53,6 +56,10 @@ int main() {
 						std::string event = j[0].get<std::string>();
 
 						if (event == "telemetry") {
+							//cout << "[Enter]";
+							//string prompt;
+							//cin >> prompt;
+							//cout << endl;
 							// j[1] is the data JSON object
 
 							string sensor_measurment = j[1]["sensor_measurement"];
@@ -101,10 +108,13 @@ int main() {
 							gt_values(1) = y_gt;
 							gt_values(2) = vx_gt;
 							gt_values(3) = vy_gt;
-							ground_truth.push_back(gt_values);
 
 							//Call ProcessMeasurment(meas_package) for Kalman filter
-							fusionEKF.ProcessMeasurement(meas_package);
+							bool useMeasure = (sensor_type.compare("R") == 0 && useRADAR)||(sensor_type.compare("L") == 0 && useLIDAR);
+							if (useMeasure) {
+								ground_truth.push_back(gt_values);
+								fusionEKF.ProcessMeasurement(meas_package);
+							}
 
 							//Push the current estimated x,y positon from the Kalman filter's state vector
 
@@ -120,10 +130,10 @@ int main() {
 							estimate(2) = v1;
 							estimate(3) = v2;
 
-							estimations.push_back(estimate);
+							if (useMeasure)
+								estimations.push_back(estimate);
 
 							VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
-
 							json msgJson;
 							msgJson["estimate_x"] = p_x;
 							msgJson["estimate_y"] = p_y;
@@ -133,6 +143,8 @@ int main() {
 							msgJson["rmse_vy"] = RMSE(3);
 							auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
 							// std::cout << msg << std::endl;
+							cout << "Step=" << counter << endl;
+							++counter;
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
 						}

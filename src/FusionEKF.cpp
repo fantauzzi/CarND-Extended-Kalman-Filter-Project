@@ -58,7 +58,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		prev_timestamp = measurement_pack.timestamp_;
 		//cout << "EKF: " << endl;
 		ekf_.x_ = VectorXd(4);
-		// ekf_.x_ << 1, 1, 1, 1;
+		ekf_.x_ << 1, 1, 1, 1;
 		ekf_.P_ = MatrixXd(4, 4);
 		ekf_.P_ << 100, 0, 0, 0, 0, 100, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000;
 
@@ -80,7 +80,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		} else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
 			auto px = measurement_pack.raw_measurements_[0];
 			auto py = measurement_pack.raw_measurements_[1];
-			ekf_.x_ << px, py, 0, 0;
+			ekf_.x_(0)=px;
+			ekf_.x_(1)=py;
 			/**
 			 Initialize state.
 			 */
@@ -129,8 +130,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	 */
 
 	if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
+		Tools theTools;
 		// Radar updates
 		ekf_.R_ =R_radar_;
+	    ekf_.H_ = theTools.CalculateJacobian(ekf_.x_);
 		ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 	} else {
 		// Laser updates
@@ -143,6 +146,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	}
 
 	// print the output
+	if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR)
+		cout << "RADAR\n";
+	else
+		cout << "LIDAR\n";
 	cout << "x_ = " << ekf_.x_ << endl;
 	cout << "P_ = " << ekf_.P_ << endl;
 }
