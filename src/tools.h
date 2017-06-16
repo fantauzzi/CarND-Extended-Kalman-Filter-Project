@@ -1,34 +1,18 @@
-#ifndef TOOLS_H_
-#define TOOLS_H_
+#pragma once
 #include <vector>
 #include "Eigen/Dense"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-using namespace std;
+using std::vector;
 
-class Tools {
-public:
-  /**
-  * Constructor.
-  */
-  Tools();
-
-  /**
-  * Destructor.
-  */
-  virtual ~Tools();
-
-  /**
-  * A helper method to calculate RMSE.
-  */
-  VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
+VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
 
   /**
   * A helper method to calculate Jacobians.
   */
-  MatrixXd CalculateJacobian(const VectorXd& x_state);
+MatrixXd calculateJacobian(const VectorXd& x_state);
 
-};
+// Ensure the angle is between -pi and pi. Perhaps not the most efficient way to do it, but it is neat!
+double NormalizeAngle(double angle);
 
-#endif /* TOOLS_H_ */

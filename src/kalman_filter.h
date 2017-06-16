@@ -1,69 +1,74 @@
-#ifndef KALMAN_FILTER_H_
-#define KALMAN_FILTER_H_
+#pragma once
 #include "Eigen/Dense"
+
+using namespace Eigen;
 
 class KalmanFilter {
 public:
 
-  // state vector
-  Eigen::VectorXd x_;
+	// state vector
+	Eigen::VectorXd x_;
 
-  // state covariance matrix
-  Eigen::MatrixXd P_;
+	// state covariance matrix
+	Eigen::MatrixXd P_;
 
-  // state transition matrix
-  Eigen::MatrixXd F_;
+	// state transition matrix
+	//Eigen::MatrixXd F_;
 
-  // process covariance matrix
-  Eigen::MatrixXd Q_;
+	// process covariance matrix
+	//Eigen::MatrixXd Q_;
 
-  // measurement matrix
-  Eigen::MatrixXd H_;
+	// measurement matrix
+	//Eigen::MatrixXd H_;
 
-  // measurement covariance matrix
-  Eigen::MatrixXd R_;
+	// measurement covariance matrix
+	//Eigen::MatrixXd R_;
 
-  /**
-   * Constructor
-   */
-  KalmanFilter();
+	/**
+	 * Constructor
+	 */
+	KalmanFilter();
 
-  /**
-   * Destructor
-   */
-  virtual ~KalmanFilter();
+	KalmanFilter(VectorXd& xInit, MatrixXd& P_Init);
 
-  /**
-   * Init Initializes Kalman filter
-   * @param x_in Initial state
-   * @param P_in Initial state covariance
-   * @param F_in Transition matrix
-   * @param H_in Measurement matrix
-   * @param R_in Measurement covariance matrix
-   * @param Q_in Process covariance matrix
-   */
-  void Init(Eigen::VectorXd &x_in, Eigen::MatrixXd &P_in, Eigen::MatrixXd &F_in,
-      Eigen::MatrixXd &H_in, Eigen::MatrixXd &R_in, Eigen::MatrixXd &Q_in);
+	void init(VectorXd& xInit, MatrixXd& P_Init);
 
-  /**
-   * Prediction Predicts the state and the state covariance
-   * using the process model
-   * @param delta_T Time between k and k+1 in s
-   */
-  void Predict();
+	/**
+	 * Destructor
+	 */
+	virtual ~KalmanFilter();
 
-  /**
-   * Updates the state by using standard Kalman Filter equations
-   * @param z The measurement at k+1
-   */
-  void Update(const Eigen::VectorXd &z);
+	/**
+	 * Init Initializes Kalman filter
+	 * @param x_in Initial state
+	 * @param P_in Initial state covariance
+	 * @param F_in Transition matrix
+	 * @param H_in Measurement matrix
+	 * @param R_in Measurement covariance matrix
+	 * @param Q_in Process covariance matrix
+	 */
+	//void Init(Eigen::VectorXd &x_in, Eigen::MatrixXd &P_in, Eigen::MatrixXd &F_in,
+	//    Eigen::MatrixXd &R_in, Eigen::MatrixXd &Q_in);
+	/**
+	 * Prediction Predicts the state and the state covariance
+	 * using the process model
+	 * @param delta_T Time between k and k+1 in s
+	 */
+	void Predict(MatrixXd& F, MatrixXd& Q);
 
-  /**
-   * Updates the state by using Extended Kalman Filter equations
-   * @param z The measurement at k+1
-   */
-  void UpdateEKF(const Eigen::VectorXd &z);
+	/**
+	 * Updates the state by using standard Kalman Filter equations
+	 * @param z The measurement at k+1
+	 */
+	void Update(const VectorXd &z, const MatrixXd & H, const MatrixXd & R);
+
+	/**
+	 * Updates the state by using Extended Kalman Filter equations
+	 * @param z The measurement at k+1
+	 */
+	void UpdateEKF(const VectorXd &z, const MatrixXd & H, const MatrixXd & R);
+
+private:
+	void basicUpdate(const VectorXd &y, const MatrixXd & H, const MatrixXd & R);
 
 };
-
-#endif /* KALMAN_FILTER_H_ */

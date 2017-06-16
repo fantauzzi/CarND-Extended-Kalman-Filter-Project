@@ -14,10 +14,10 @@ using json = nlohmann::json;
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
 std::string hasData(std::string s) {
-	auto found_null = s.find("null");
+	auto foundNull = s.find("null");
 	auto b1 = s.find_first_of("[");
 	auto b2 = s.find_first_of("]");
-	if (found_null != std::string::npos) {
+	if (foundNull != std::string::npos) {
 		return "";
 	} else if (b1 != std::string::npos && b2 != std::string::npos) {
 		return s.substr(b1, b2 - b1 + 1);
@@ -32,15 +32,16 @@ int main() {
 	FusionEKF fusionEKF;
 
 	// used to compute the RMSE later
-	Tools tools;
 	vector<VectorXd> estimations;
-	vector<VectorXd> ground_truth;
-	auto counter { 0 };
-	auto useLIDAR { false };
-	auto useRADAR { true };
+	vector<VectorXd> groundTruth;
+
+	// A few variables useful for debugging
+	auto step { 0 }; // Progressive counter of computation steps, increased after processing of every measurement
+	auto useLIDAR { true };  // Set to false to ignore LIDAR measurements
+	auto useRADAR { true };  // Set to false to ignore RADAR measurements
 
 	h.onMessage(
-			[&counter, useRADAR, useLIDAR, &fusionEKF,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+			[&step, useRADAR, useLIDAR, &fusionEKF,&estimations,&groundTruth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
 				// "42" at the start of the message means there's a websocket message event.
 				// The 4 signifies a websocket message
 				// The 2 signifies a websocket event
@@ -56,44 +57,38 @@ int main() {
 						std::string event = j[0].get<std::string>();
 
 						if (event == "telemetry") {
-							//cout << "[Enter]";
-							//string prompt;
-							//cin >> prompt;
-							//cout << endl;
-							// j[1] is the data JSON object
+							string sensorMeasurement = j[1]["sensor_measurement"];
 
-							string sensor_measurment = j[1]["sensor_measurement"];
-
-							MeasurementPackage meas_package;
-							istringstream iss(sensor_measurment);
+							MeasurementPackage measPackage;
+							istringstream iss(sensorMeasurement);
 							long long timestamp;
 
 							// reads first element from the current line
-							string sensor_type;
-							iss >> sensor_type;
+							string sensorType;
+							iss >> sensorType;
 
-							if (sensor_type.compare("L") == 0) {
-								meas_package.sensor_type_ = MeasurementPackage::LASER;
-								meas_package.raw_measurements_ = VectorXd(2);
+							if (sensorType.compare("L") == 0) {
+								measPackage.sensorType = MeasurementPackage::LASER;
+								measPackage.rawMeasurements = VectorXd(2);
 								float px;
 								float py;
 								iss >> px;
 								iss >> py;
-								meas_package.raw_measurements_ << px, py;
+								measPackage.rawMeasurements << px, py;
 								iss >> timestamp;
-								meas_package.timestamp_ = timestamp;
-							} else if (sensor_type.compare("R") == 0) {
-								meas_package.sensor_type_ = MeasurementPackage::RADAR;
-								meas_package.raw_measurements_ = VectorXd(3);
-								float ro;
+								measPackage.timestamp = timestamp;
+							} else if (sensorType.compare("R") == 0) {
+								measPackage.sensorType = MeasurementPackage::RADAR;
+								measPackage.rawMeasurements = VectorXd(3);
+								float rho;
 								float theta;
-								float ro_dot;
-								iss >> ro;
+								float rhoDot;
+								iss >> rho;
 								iss >> theta;
-								iss >> ro_dot;
-								meas_package.raw_measurements_ << ro,theta, ro_dot;
+								iss >> rhoDot;
+								measPackage.rawMeasurements << rho,theta, rhoDot;
 								iss >> timestamp;
-								meas_package.timestamp_ = timestamp;
+								measPackage.timestamp = timestamp;
 							}
 							float x_gt;
 							float y_gt;
@@ -109,42 +104,42 @@ int main() {
 							gt_values(2) = vx_gt;
 							gt_values(3) = vy_gt;
 
-							//Call ProcessMeasurment(meas_package) for Kalman filter
-							bool useMeasure = (sensor_type.compare("R") == 0 && useRADAR)||(sensor_type.compare("L") == 0 && useLIDAR);
+							// Feed the measure to an extended Kalman Filter for processing
+							bool useMeasure = (sensorType.compare("R") == 0 && useRADAR)||(sensorType.compare("L") == 0 && useLIDAR);
 							if (useMeasure) {
-								ground_truth.push_back(gt_values);
-								fusionEKF.ProcessMeasurement(meas_package);
+								groundTruth.push_back(gt_values); // This will be used below to calculate the RMSE, i.e. the goodness of estimates
+								fusionEKF.ProcessMeasurement(measPackage);
 							}
 
 							//Push the current estimated x,y positon from the Kalman filter's state vector
 
 							VectorXd estimate(4);
 
-							double p_x = fusionEKF.ekf_.x_(0);
-							double p_y = fusionEKF.ekf_.x_(1);
-							double v1 = fusionEKF.ekf_.x_(2);
-							double v2 = fusionEKF.ekf_.x_(3);
+							double pX = fusionEKF.ekf.x_(0);
+							double pY = fusionEKF.ekf.x_(1);
+							double vX = fusionEKF.ekf.x_(2);
+							double vY = fusionEKF.ekf.x_(3);
 
-							estimate(0) = p_x;
-							estimate(1) = p_y;
-							estimate(2) = v1;
-							estimate(3) = v2;
+							estimate(0) = pX;
+							estimate(1) = pY;
+							estimate(2) = vX;
+							estimate(3) = vY;
 
 							if (useMeasure)
-								estimations.push_back(estimate);
+							estimations.push_back(estimate);
 
-							VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
+							VectorXd RMSE = CalculateRMSE(estimations, groundTruth);
 							json msgJson;
-							msgJson["estimate_x"] = p_x;
-							msgJson["estimate_y"] = p_y;
+							msgJson["estimate_x"] = pX;
+							msgJson["estimate_y"] = pY;
 							msgJson["rmse_x"] = RMSE(0);
 							msgJson["rmse_y"] = RMSE(1);
 							msgJson["rmse_vx"] = RMSE(2);
 							msgJson["rmse_vy"] = RMSE(3);
 							auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
 							// std::cout << msg << std::endl;
-							cout << "Step=" << counter << endl;
-							++counter;
+							// cout << "Step=" << step << endl;
+							++step;
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
 						}
