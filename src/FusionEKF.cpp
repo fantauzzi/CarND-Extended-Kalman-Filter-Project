@@ -33,8 +33,8 @@ FusionEKF::FusionEKF() {
 	 * Finish initializing the FusionEKF.
 	 * Set the process and measurement noises
 	 */
-	noise_ax = 5.;
-	noise_ay = 5.;
+	noise_ax = 9.;
+	noise_ay = 9.;
 }
 
 /**
@@ -60,7 +60,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		ekf_.x_ = VectorXd(4);
 		ekf_.x_ << 1, 1, 1, 1;
 		ekf_.P_ = MatrixXd(4, 4);
-		ekf_.P_ << 100, 0, 0, 0, 0, 100, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000;
+		ekf_.P_ << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000;
 
 		ekf_.F_ = MatrixXd(4, 4);
 		ekf_.F_ << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
@@ -76,6 +76,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 			auto py = rho * sin(theta);
 			auto xDot = rhoDot * cos(theta);
 			auto yDot = rhoDot * sin(theta);
+
 			ekf_.x_ << px, py, xDot, yDot;
 		} else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
 			auto px = measurement_pack.raw_measurements_[0];
@@ -104,6 +105,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	 */
 
 	auto deltaT = (measurement_pack.timestamp_ - prev_timestamp) / 1000000.0;
+	prev_timestamp = measurement_pack.timestamp_;
 	ekf_.F_(0, 2) = deltaT;
 	ekf_.F_(1, 3) = deltaT;
 
@@ -133,8 +135,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		Tools theTools;
 		// Radar updates
 		ekf_.R_ =R_radar_;
-	    ekf_.H_ = theTools.CalculateJacobian(ekf_.x_);
-		ekf_.UpdateEKF(measurement_pack.raw_measurements_);
+	    auto rho= measurement_pack.raw_measurements_(0);
+	    auto theta= measurement_pack.raw_measurements_(1);
+	    auto rhoDot= measurement_pack.raw_measurements_(2);
+	    VectorXd g_of_z(4);
+	    g_of_z << rho*cos(theta) , rho*sin(theta) , rhoDot*cos(theta) , rhoDot*sin(theta);
+	    ekf_.H_ = theTools.CalculateJacobian(g_of_z);
+	    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 	} else {
 		// Laser updates
 		ekf_.H_ = MatrixXd(2, 4);

@@ -36,8 +36,8 @@ int main() {
 	vector<VectorXd> estimations;
 	vector<VectorXd> ground_truth;
 	auto counter { 0 };
-	auto useLIDAR { true };
-	auto useRADAR { false };
+	auto useLIDAR { false };
+	auto useRADAR { true };
 
 	h.onMessage(
 			[&counter, useRADAR, useLIDAR, &fusionEKF,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {

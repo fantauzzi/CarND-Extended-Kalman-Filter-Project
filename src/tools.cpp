@@ -46,7 +46,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
     return rmse;
 }
 
-MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
+MatrixXd CalculateJacobian2(const VectorXd& x_state) {
   /**
     * Calculate a Jacobian here.
   */
@@ -58,13 +58,14 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
     Hj.setZero();
     auto sq_sum = pow(px, 2) + pow(py, 2);
+
     if (sq_sum==0) {
             cout << "Division by zero in Jacobian." << endl;
             return Hj;
     }
 
     auto sq_rt_sum = sqrt(sq_sum);
-
+    assert(sq_rt_sum>0.0001);
     Hj(0, 0) = px / sq_rt_sum;
     Hj(0, 1) = py / sq_rt_sum;
     Hj(1,0)=-py/sq_sum;
@@ -76,4 +77,35 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 
     return Hj;
 
+}
+
+MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
+
+	std::cout << "Jac of " << endl << x_state << endl;
+
+	MatrixXd Hj(3,4);
+	//recover state parameters
+	double px = x_state(0);
+	double py = x_state(1);
+	double vx = x_state(2);
+	double vy = x_state(3);
+
+	//pre-compute a set of terms to avoid repeated calculation
+	double c1 = px*px+py*py;
+	double c2 = sqrt(c1);
+	double c3 = (c1*c2);
+
+	//check division by zero
+	if(fabs(c1) < 0.0001){
+		cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+		assert(0);
+		return Hj;
+	}
+
+	//compute the Jacobian matrix
+	Hj << (px/c2), (py/c2), 0, 0,
+		  -(py/c1), (px/c1), 0, 0,
+		  py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
+
+	return Hj;
 }
