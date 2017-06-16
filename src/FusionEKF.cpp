@@ -9,9 +9,6 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
-/*
- * Constructor.
- */
 FusionEKF::FusionEKF() :
 		isInitialized { false }, previousTimestamp { 0 }, R_Lidar { MatrixXd(2,
 				2) }, R_Radar { MatrixXd(3, 3) }, noiseAx { 9. }, noiseAy { 9. } {
@@ -23,13 +20,18 @@ FusionEKF::FusionEKF() :
 	R_Radar << 0.09, 0, 0, 0, 0.0009, 0, 0, 0, 0.09;
 }
 
-/**
- * Destructor.
- */
 FusionEKF::~FusionEKF() {
 }
 
-void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
+VectorXd FusionEKF::getState() const {
+	return ekf.getState();
+}
+
+MatrixXd FusionEKF::getStateCovariance() const{
+	return ekf.getStateCovariance();
+}
+
+void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 
 	/*****************************************************************************
 	 *  Initialization
@@ -96,7 +98,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	Q(1, 3) = Q(3, 1);
 	Q(3, 3) = std::pow(deltaT, 2) * noiseAy;
 
-	ekf.Predict(F, Q);
+	ekf.predict(F, Q);
 
 	/*****************************************************************************
 	 *  Update
@@ -111,16 +113,16 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		auto rho = measurement_pack.rawMeasurements(0);
 		auto theta = measurement_pack.rawMeasurements(1);
 		auto rhoDot = measurement_pack.rawMeasurements(2);
-		VectorXd g_of_z(4);
+		VectorXd g_of_z(4);  // g(z)
 		g_of_z << rho * cos(theta), rho * sin(theta), rhoDot * cos(theta), rhoDot
 				* sin(theta);
 		auto H = calculateJacobian(g_of_z);
-		ekf.UpdateEKF(measurement_pack.rawMeasurements, H, R_Radar);
+		ekf.updateEKF(measurement_pack.rawMeasurements, H, R_Radar);
 	} else {
 		auto H = MatrixXd(2, 4);
 		H << 1, 0, 0, 0, 0, 1, 0, 0;
 
-		ekf.Update(measurement_pack.rawMeasurements, H, R_Lidar);
+		ekf.update(measurement_pack.rawMeasurements, H, R_Lidar);
 
 	}
 
@@ -129,6 +131,6 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 		cout << "RADAR\n";
 	else
 		cout << "LIDAR\n";
-	cout << "x_ = " << ekf.x_ << endl;
-	cout << "P_ = " << ekf.P_ << endl;
+	cout << "x_ = " << ekf.getState() << endl;
+	cout << "P_ = " << ekf.getStateCovariance() << endl;
 }

@@ -6,69 +6,53 @@ using namespace Eigen;
 class KalmanFilter {
 public:
 
-	// state vector
-	Eigen::VectorXd x_;
-
-	// state covariance matrix
-	Eigen::MatrixXd P_;
-
-	// state transition matrix
-	//Eigen::MatrixXd F_;
-
-	// process covariance matrix
-	//Eigen::MatrixXd Q_;
-
-	// measurement matrix
-	//Eigen::MatrixXd H_;
-
-	// measurement covariance matrix
-	//Eigen::MatrixXd R_;
-
-	/**
-	 * Constructor
-	 */
 	KalmanFilter();
 
-	KalmanFilter(VectorXd& xInit, MatrixXd& P_Init);
-
-	void init(VectorXd& xInit, MatrixXd& P_Init);
-
-	/**
-	 * Destructor
-	 */
 	virtual ~KalmanFilter();
 
-	/**
-	 * Init Initializes Kalman filter
-	 * @param x_in Initial state
-	 * @param P_in Initial state covariance
-	 * @param F_in Transition matrix
-	 * @param H_in Measurement matrix
-	 * @param R_in Measurement covariance matrix
-	 * @param Q_in Process covariance matrix
-	 */
-	//void Init(Eigen::VectorXd &x_in, Eigen::MatrixXd &P_in, Eigen::MatrixXd &F_in,
-	//    Eigen::MatrixXd &R_in, Eigen::MatrixXd &Q_in);
-	/**
-	 * Prediction Predicts the state and the state covariance
-	 * using the process model
-	 * @param delta_T Time between k and k+1 in s
-	 */
-	void Predict(MatrixXd& F, MatrixXd& Q);
+	// Initialises the EKF to its initial state, based on the given state and state covariance estimates.
+	void init(const VectorXd& xInit, const MatrixXd& P_Init);
 
-	/**
-	 * Updates the state by using standard Kalman Filter equations
-	 * @param z The measurement at k+1
-	 */
-	void Update(const VectorXd &z, const MatrixXd & H, const MatrixXd & R);
+	// Returns the current state estimate, or an uninitialised vector if state hasn't been initialised yet (init() hasn't been called).
+	VectorXd getState() const;
 
-	/**
-	 * Updates the state by using Extended Kalman Filter equations
-	 * @param z The measurement at k+1
+	// Returns the current state variance estimate, or an uninitialised amtrix if state hasn't been initialised yet (init() hasn't been called).
+	MatrixXd getStateCovariance() const;
+
+	/* Runs the prediction step of the KF, based on the current state and state covariance estimates, and using
+	 * the given state transition matrix F and process covariance Q.
 	 */
-	void UpdateEKF(const VectorXd &z, const MatrixXd & H, const MatrixXd & R);
+	void predict(const MatrixXd& F, const MatrixXd& Q);
+
+	/* Runs the update step of the KF, based on the current state and covariance estimates.
+	 * @param z the sensor measurements.
+	 * @param H the matrix giving the linear relationship between state and measurements.
+	 * @param R the sensors noise covariance matrix.
+	 */
+	void update(const VectorXd &z, const MatrixXd & H, const MatrixXd & R);
+
+	/* Runs the update step of the Extended KF, based on the current state and covariance estimates.
+	 * @param z the sensor measurements.
+	 * @param H the Jacobian used in the linear approximation of the relationship between state and measurements.
+	 * @param R the sensors noise covariance matrix.
+	 */
+	void updateEKF(const VectorXd &z, const MatrixXd & H, const MatrixXd & R);
 
 private:
+
+	// The current state estimate
+	Eigen::VectorXd x;
+
+	// The current covariance estimate
+	Eigen::MatrixXd P;
+
+	// Identity matrix, just not to fill it in again every time it is needed.
+	Eigen::MatrixXd I;
+
+	/* Runs the part of the algorithm common between KF and EKF. Parameter `y` is the difference between the last
+	 * measurements and what the measurements should be if the estimated state was the actual one; it has 4 components
+	 * for a KF, and 3 for an EKF.
+	 */
 	void basicUpdate(const VectorXd &y, const MatrixXd & H, const MatrixXd & R);
 
 };

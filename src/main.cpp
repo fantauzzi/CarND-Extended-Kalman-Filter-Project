@@ -104,47 +104,32 @@ int main() {
 							gt_values(2) = vx_gt;
 							gt_values(3) = vy_gt;
 
-							// Feed the measure to an extended Kalman Filter for processing
+							// Feed measurements to an Extended Kalman Filter (EKF) for processing
 							bool useMeasure = (sensorType.compare("R") == 0 && useRADAR)||(sensorType.compare("L") == 0 && useLIDAR);
 							if (useMeasure) {
-								groundTruth.push_back(gt_values); // This will be used below to calculate the RMSE, i.e. the goodness of estimates
-								fusionEKF.ProcessMeasurement(measPackage);
+								groundTruth.push_back(gt_values); // This will be used below to calculate the RMSE, i.e. goodness of the estimates
+								fusionEKF.processMeasurement(measPackage);
 							}
 
-							//Push the current estimated x,y positon from the Kalman filter's state vector
+							// Store in `estimations` the current estimated state, as per the EKF.
+							auto x = fusionEKF.getState();
 
-							VectorXd estimate(4);
+							if (useMeasure) estimations.push_back(x);
 
-							double pX = fusionEKF.ekf.x_(0);
-							double pY = fusionEKF.ekf.x_(1);
-							double vX = fusionEKF.ekf.x_(2);
-							double vY = fusionEKF.ekf.x_(3);
-
-							estimate(0) = pX;
-							estimate(1) = pY;
-							estimate(2) = vX;
-							estimate(3) = vY;
-
-							if (useMeasure)
-							estimations.push_back(estimate);
-
-							VectorXd RMSE = CalculateRMSE(estimations, groundTruth);
+							VectorXd RMSE = calculateRMSE(estimations, groundTruth);
 							json msgJson;
-							msgJson["estimate_x"] = pX;
-							msgJson["estimate_y"] = pY;
+							msgJson["estimate_x"] = x(0);
+							msgJson["estimate_y"] = x(1);
 							msgJson["rmse_x"] = RMSE(0);
 							msgJson["rmse_y"] = RMSE(1);
 							msgJson["rmse_vx"] = RMSE(2);
 							msgJson["rmse_vy"] = RMSE(3);
 							auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
-							// std::cout << msg << std::endl;
-							// cout << "Step=" << step << endl;
 							++step;
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
 						}
 					} else {
-
 						std::string msg = "42[\"manual\",{}]";
 						ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 					}

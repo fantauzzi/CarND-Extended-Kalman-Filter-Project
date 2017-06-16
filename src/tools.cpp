@@ -7,14 +7,10 @@ using std::vector;
 using std::cout;
 using std::endl;
 
-VectorXd CalculateRMSE(const vector<VectorXd> &estimations,
+VectorXd calculateRMSE(const vector<VectorXd> &estimations,
 		const vector<VectorXd> &ground_truth) {
-	/**
-	 * Calculate the RMSE here.
-	 */
 	VectorXd rmse(4);
 	rmse.setZero();
-
 	// check the validity of the following inputs:
 	//  * the estimation vector size should not be zero
 	//  * the estimation vector size should equal ground truth vector size
@@ -27,26 +23,17 @@ VectorXd CalculateRMSE(const vector<VectorXd> &estimations,
 	for (unsigned int i = 0; i < estimations.size(); ++i) {
 
 		VectorXd residual = estimations[i] - ground_truth[i];
-
-		//coefficient-wise multiplication
 		residual = residual.array().pow(2);
 		rmse += residual;
 	}
 
-	//calculate the mean
 	rmse = rmse / estimations.size();
-
-	//calculate the squared root
 	rmse = rmse.array().sqrt();
 
-	//return the result
 	return rmse;
 }
 
 MatrixXd CalculateJacobian2(const VectorXd& x_state) {
-	/**
-	 * Calculate a Jacobian here.
-	 */
 	MatrixXd Hj(3, 4);
 	auto px = x_state(0);
 	auto py = x_state(1);
@@ -107,8 +94,9 @@ MatrixXd calculateJacobian(const VectorXd& x_state) {
 	return Hj;
 }
 
-// Ensure the angle is between -pi and pi. Perhaps not the most efficient way to do it, but it is neat!
-double NormalizeAngle(double angle) {
+
+double normalizeAngle(const double angle) {
+	// Perhaps not the most efficient way to do it, but it is neat!
 	auto x = cos(angle);
 	auto y = sin(angle);
 	double norm = atan2(y, x);

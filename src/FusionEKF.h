@@ -9,38 +9,43 @@
 
 class FusionEKF {
 public:
-	/**
-	 * Constructor.
-	 */
 	FusionEKF();
 
-	/**
-	 * Destructor.
-	 */
 	virtual ~FusionEKF();
 
-	/**
-	 * Run the whole flow of the Kalman Filter from here.
-	 */
-	void ProcessMeasurement(const MeasurementPackage &measurement_pack);
 
-	/**
-	 * Kalman Filter update and prediction math lives in here.
+	/* When called for the first time on the instantiated FusionEKF, it initialises the state estimate and
+	 * co-variance matrix estimate based on the given measurements. When subsequently called, it updates the
+	 * state and co-variance estimates based on the given measurements.
 	 */
-	KalmanFilter ekf;
+	void processMeasurement(const MeasurementPackage &measurement_pack);
+
+	/* Returns the current state estimate; if processMeasurement() hasn't been called yet on the object,
+	 * then it return an un-initialised vector.
+	 */
+	VectorXd getState() const;
+
+	/* Returns the current co-variance estimate; if processMeasurement() hasn't been called yet on the object,
+	 * then it return an un-initialised matrix.
+	 */
+	MatrixXd getStateCovariance() const;
 
 private:
-	// check whether the tracking toolbox was initialized or not (first measurement)
+	// True iff the EKF has been initialised, i.e. processMeasurement() has been called at least once on the object.
 	bool isInitialized;
 
-	// previous timestamp
+	// Timestamp of the latest processed measurements, in microseconds from an epoch.
 	long long previousTimestamp;
 
-	// tool object used to compute Jacobian and RMSE
+	// Covariance of the measurements noise distribution, it is a characteristic of the sensor.
 	Eigen::MatrixXd R_Lidar;
 	Eigen::MatrixXd R_Radar;
-	// Eigen::MatrixXd H_laser_;
-	float noiseAx;
-	float noiseAy;
+
+	// Process noise variance along x and y
+	double noiseAx;
+	double noiseAy;
+
+	// Where the magic happens
+	KalmanFilter ekf;
 };
 
