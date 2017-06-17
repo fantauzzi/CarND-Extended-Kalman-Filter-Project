@@ -29,9 +29,10 @@ public:
 	 */
 	MatrixXd getStateCovariance() const;
 
+
 private:
 	// True iff the EKF has been initialised, i.e. processMeasurement() has been called at least once on the object.
-	bool isInitialized;
+	bool initialised;
 
 	// Timestamp of the latest processed measurements, in microseconds from an epoch.
 	long long previousTimestamp;

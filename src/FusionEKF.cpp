@@ -10,7 +10,7 @@ using Eigen::VectorXd;
 using std::vector;
 
 FusionEKF::FusionEKF() :
-		isInitialized { false }, previousTimestamp { 0 }, R_Lidar { MatrixXd(2,
+		initialised { false }, previousTimestamp { 0 }, R_Lidar { MatrixXd(2,
 				2) }, R_Radar { MatrixXd(3, 3) }, noiseAx { 9. }, noiseAy { 9. } {
 
 	//Fill in the sensore noise covariance matrices
@@ -36,7 +36,7 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 	 ****************************************************************************/
 
 	// If it is the first measurement to be processed...
-	if (!isInitialized) {
+	if (!initialised) {
 		// ... initialise the KF setting its initial state estimate x and covariance matrix P
 		previousTimestamp = measurement_pack.timestamp;
 		auto x = VectorXd(4);
@@ -61,7 +61,7 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 		}
 
 		ekf.init(x, P);
-		isInitialized = true;
+		initialised = true;
 		return;
 	}
 

@@ -131,19 +131,35 @@ int main(int argc, char* argv[]) {
 								fusionEKF.processMeasurement(measPackage);
 							}
 
-							// Store in `estimations` the current estimated state, as per the EKF.
+							// Append to `estimations` the current estimated state, as per the EKF.
 							auto x = fusionEKF.getState();
+							VectorXd RMSE;
+							if (useMeasure)
+								estimations.push_back(x);
 
-							if (useMeasure) estimations.push_back(x);
-
-							VectorXd RMSE = calculateRMSE(estimations, groundTruth);
 							json msgJson;
-							msgJson["estimate_x"] = x(0);
-							msgJson["estimate_y"] = x(1);
-							msgJson["rmse_x"] = RMSE(0);
-							msgJson["rmse_y"] = RMSE(1);
-							msgJson["rmse_vx"] = RMSE(2);
-							msgJson["rmse_vy"] = RMSE(3);
+							if (estimations.size() >0) {
+								RMSE= calculateRMSE(estimations, groundTruth);
+								msgJson["estimate_x"] = x(0);
+								msgJson["estimate_y"] = x(1);
+								msgJson["rmse_x"] = RMSE(0);
+								msgJson["rmse_y"] = RMSE(1);
+								msgJson["rmse_vx"] = RMSE(2);
+								msgJson["rmse_vy"] = RMSE(3);
+							}
+							/* If no estimate is available, then all measurements processed so far are of the kind
+							 * (LIDAR or RADAR) that should be skipped; the simulator is still waiting for a message
+							 * with estimates and RMSE, so send a message with dummy values (otherwise the simulator
+							 * will wait indefinitely, and not send the next measurements)
+							 */
+							else {
+								msgJson["estimate_x"] = 0;
+								msgJson["estimate_y"] = 0;
+								msgJson["rmse_x"] = 0;
+								msgJson["rmse_y"] = 0;
+								msgJson["rmse_vx"] = 0;
+								msgJson["rmse_vy"] = 0;
+							}
 							auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
 							++step;
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
