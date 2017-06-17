@@ -7,12 +7,15 @@ using std::vector;
 using std::cout;
 using std::endl;
 
-VectorXd calculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &groundTruth) {
+VectorXd calculateRMSE(const vector<VectorXd> &estimations,
+		const vector<VectorXd> &groundTruth) {
 	VectorXd rmse(4);
 	rmse.setZero();
 	// Check the validity of the input parameters
 	if (estimations.size() != groundTruth.size() || estimations.size() == 0) {
-		cout << "ERROR calculateRMSE() - Invalid estimation or groundTruth data." << endl;
+		cout
+				<< "ERROR calculateRMSE() - Invalid estimation or groundTruth data."
+				<< endl;
 		return rmse;
 	}
 

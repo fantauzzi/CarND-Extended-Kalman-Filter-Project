@@ -13,7 +13,6 @@ public:
 
 	virtual ~FusionEKF();
 
-
 	/* When called for the first time on the instantiated FusionEKF, it initialises the state estimate and
 	 * co-variance matrix estimate based on the given measurements. When subsequently called, it updates the
 	 * state and co-variance estimates based on the given measurements.

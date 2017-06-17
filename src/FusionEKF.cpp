@@ -13,10 +13,8 @@ FusionEKF::FusionEKF() :
 		isInitialized { false }, previousTimestamp { 0 }, R_Lidar { MatrixXd(2,
 				2) }, R_Radar { MatrixXd(3, 3) }, noiseAx { 9. }, noiseAy { 9. } {
 
-	//measurement covariance matrix - laser
+	//Fill in the sensore noise covariance matrices
 	R_Lidar << 0.0225, 0, 0, 0.0225;
-
-	//measurement covariance matrix - radar
 	R_Radar << 0.09, 0, 0, 0, 0.0009, 0, 0, 0, 0.09;
 }
 
@@ -27,30 +25,26 @@ VectorXd FusionEKF::getState() const {
 	return ekf.getState();
 }
 
-MatrixXd FusionEKF::getStateCovariance() const{
+MatrixXd FusionEKF::getStateCovariance() const {
 	return ekf.getStateCovariance();
 }
 
 void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 
 	/*****************************************************************************
-	 *  Initialization
+	 *  Initialisation
 	 ****************************************************************************/
+
+	// If it is the first measurement to be processed...
 	if (!isInitialized) {
-		/**
-		 * Initialize the state of ekf with the first measurement.
-		 * Create the covariance matrix.
-		 */
-		// first measurement
+		// ... initialise the KF setting its initial state estimate x and covariance matrix P
 		previousTimestamp = measurement_pack.timestamp;
 		auto x = VectorXd(4);
 		auto P = MatrixXd(4, 4);
 		P << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000;
 
 		if (measurement_pack.sensorType == MeasurementPackage::RADAR) {
-			/**
-			 Convert radar from polar to cartesian coordinates and initialize state.
-			 */
+			// Radar measurement needs to be converted to estimated state
 			auto rho = measurement_pack.rawMeasurements[0];
 			auto theta = measurement_pack.rawMeasurements[1];
 			auto rhoDot = measurement_pack.rawMeasurements[2];
@@ -60,13 +54,13 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 			auto yDot = rhoDot * sin(theta);
 			x << px, py, xDot, yDot;
 		} else if (measurement_pack.sensorType == MeasurementPackage::LASER) {
+			// Lidar measurement provides initial px and py, but no velocity information
 			auto px = measurement_pack.rawMeasurements[0];
 			auto py = measurement_pack.rawMeasurements[1];
 			x << px, py, 1, 1;
 		}
 
 		ekf.init(x, P);
-		// done initializing, no need to predict or update
 		isInitialized = true;
 		return;
 	}
@@ -75,15 +69,11 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 	 *  Prediction
 	 ****************************************************************************/
 
-	/**
-	 * Update the state:transition matrix F according to the new elapsed time.
-	 - Time is measured in seconds.
-	 * Update the process noise covariance matrix.
-	 * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
-	 */
-
-	auto deltaT = (measurement_pack.timestamp - previousTimestamp) / 1000000.0;
+	auto deltaT = (measurement_pack.timestamp - previousTimestamp) / 1000000.0; // deltaT is in seconds
 	previousTimestamp = measurement_pack.timestamp;
+
+	// Set F and Q based on delta T, noiseAx and noiseAy
+
 	auto F = MatrixXd(4, 4);
 	F << 1, 0, deltaT, 0, 0, 1, 0, deltaT, 0, 0, 1, 0, 0, 0, 0, 1;
 
@@ -104,34 +94,26 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 	 *  Update
 	 ****************************************************************************/
 
-	/**
-	 * Use the sensor type to perform the update step.
-	 * Update the state and covariance matrices.
-	 */
-
 	if (measurement_pack.sensorType == MeasurementPackage::RADAR) {
-		auto rho = measurement_pack.rawMeasurements(0);
-		auto theta = measurement_pack.rawMeasurements(1);
-		auto rhoDot = measurement_pack.rawMeasurements(2);
-		VectorXd g_of_z(4);  // g(z)
-		g_of_z << rho * cos(theta), rho * sin(theta), rhoDot * cos(theta), rhoDot
-				* sin(theta);
-		auto H = calculateJacobian(g_of_z);
+		/* If mesurements come from RADAR, set H to the Jacobian in the state
+		 * estimated after prediction.
+		 */
+		auto H = calculateJacobian(ekf.getState());
 		ekf.updateEKF(measurement_pack.rawMeasurements, H, R_Radar);
 	} else {
+		// Set H for measurements coming from LIDAR
 		auto H = MatrixXd(2, 4);
 		H << 1, 0, 0, 0, 0, 1, 0, 0;
-
 		ekf.update(measurement_pack.rawMeasurements, H, R_Lidar);
 
 	}
 
 	// print the output, left here for debugging
 	/*
-	if (measurement_pack.sensorType == MeasurementPackage::RADAR)
-		cout << "RADAR\n";
-	else
-		cout << "LIDAR\n";
-	cout << "x_ = " << ekf.getState() << endl;
-	cout << "P_ = " << ekf.getStateCovariance() << endl; */
+	 if (measurement_pack.sensorType == MeasurementPackage::RADAR)
+	 cout << "RADAR\n";
+	 else
+	 cout << "LIDAR\n";
+	 cout << "x_ = " << ekf.getState() << endl;
+	 cout << "P_ = " << ekf.getStateCovariance() << endl; */
 }
