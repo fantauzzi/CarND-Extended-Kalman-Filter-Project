@@ -1,9 +1,9 @@
 # Extended Kalman Filter Project
-Self-Driving Car Engineer Nanodegree Program
+**Self-Driving Car Engineer Nanodegree Program**
 
 In this project I utilize an Extended Kalman Filter to estimate the state of a moving object of interest with noisy lidar and radar measurements. 
 
-This project involves the Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases)
+This project involves the Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases).
 
 This repository includes two files that can be used to set up and intall [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) for either Linux or Mac systems. For windows you can use either Docker, VMware, or even [Windows 10 Bash on Ubuntu](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/) to install uWebSocketIO. 
 
@@ -44,8 +44,10 @@ Once the install for uWebSocketIO is complete, the main program can be built and
 * `cmakepatch.txt` cmake configuration file;
 * `.cproject` Eclipse CDT project file; note that in order to use it, you should first remove the cmake configuration files from the project directory;
 * `data/obj_pose-laser-radar-synthetic-input.txt` list of sensor readings produced by the simulator (they are provided for reference, chaning them will not affect the simulator behavior);
-* `docs/Input_Output File Format.txt` description of the `obj_pose-laser-radar-synthetic-input.txt` file format;
+* `Docs/Input_Output File Format.txt` description of the `obj_pose-laser-radar-synthetic-input.txt` file format;
+* `.gitignore` lists files to be ignored by Git;
 * `.project` Eclipse CDT project file;
 * `README.md` this file;
 * `.settings/` directory with Eclipse CDT project settings;
-* `src/` directory containing the project C++ source code.
+* `src/` directory containing the project C++ source code;
+* `src/Eigen` directory containing the [Eigen](http://eigen.tuxfamily.org) template library for linear algebra.
