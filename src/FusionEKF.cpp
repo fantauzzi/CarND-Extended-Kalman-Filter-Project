@@ -126,11 +126,12 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack) {
 
 	}
 
-	// print the output
+	// print the output, left here for debugging
+	/*
 	if (measurement_pack.sensorType == MeasurementPackage::RADAR)
 		cout << "RADAR\n";
 	else
 		cout << "LIDAR\n";
 	cout << "x_ = " << ekf.getState() << endl;
-	cout << "P_ = " << ekf.getStateCovariance() << endl;
+	cout << "P_ = " << ekf.getStateCovariance() << endl; */
 }

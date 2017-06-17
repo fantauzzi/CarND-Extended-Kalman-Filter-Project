@@ -1,5 +1,6 @@
 #include <uWS/uWS.h>
 #include <iostream>
+#include <string>
 #include "json.hpp"
 #include <math.h>
 #include "FusionEKF.h"
@@ -25,7 +26,29 @@ std::string hasData(std::string s) {
 	return "";
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+
+	const auto usage =
+			"Usage: FusionEKF <sensor>\n   where <sensor> is \"radar\" or \"lidar\" to only use measurements from that sensor,\n   or left out to use measurements from both sensors.";
+
+	auto useLIDAR { true };  // Set to false to ignore LIDAR measurements
+	auto useRADAR { true };  // Set to false to ignore RADAR measurements
+
+	if (argc > 1) {
+		string param {argv[1]};
+		if (argc == 2 and param == "radar") {
+			useLIDAR = false;
+			cout << "Using measurements from RADAR only" << endl;
+		}
+		else if (argc == 2 and param == "lidar") {
+			useRADAR = false;
+			cout << "Using measurements from LIDAR only" << endl;
+		}
+
+		else
+			cout << usage << endl << "Arguments ignored" << endl;
+	}
+
 	uWS::Hub h;
 
 	// Create a Kalman Filter instance
@@ -35,10 +58,7 @@ int main() {
 	vector<VectorXd> estimations;
 	vector<VectorXd> groundTruth;
 
-	// A few variables useful for debugging
-	auto step { 0 }; // Progressive counter of computation steps, increased after processing of every measurement
-	auto useLIDAR { true };  // Set to false to ignore LIDAR measurements
-	auto useRADAR { true };  // Set to false to ignore RADAR measurements
+	auto step { 0 }; // Progressive counter of computation steps, increased after processing of every measurement, useful for debugging
 
 	h.onMessage(
 			[&step, useRADAR, useLIDAR, &fusionEKF,&estimations,&groundTruth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {

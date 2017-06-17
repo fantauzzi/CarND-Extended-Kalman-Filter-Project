@@ -19,3 +19,6 @@ MatrixXd calculateJacobian(const VectorXd& x_state);
 // Returns the given angle after normalization, ensuring it is between -pi and pi.
 double normalizeAngle(const double angle);
 
+// Threshold below which the absolute value of a denominator is considered too close to 0
+const double threshold = 0.00001;
+
